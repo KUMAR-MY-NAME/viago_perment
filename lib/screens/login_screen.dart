@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/firestore_service.dart';
 import '../services/firebase_auth_service.dart';
 
@@ -23,6 +24,12 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _saveLogin(String uid) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('loggedIn', true);
+    await prefs.setString('uid', uid);
+  }
+
   Future<void> _login() async {
     if (mounted) {
       setState(() => _loading = true);
@@ -34,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (user == null) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid username or password')),
         );
@@ -45,12 +53,17 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (hash != user.passwordHash) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid username or password')),
         );
         return;
       }
 
+      // Save login state locally
+      await _saveLogin(user.uid);
+
+      if (!mounted) return;
       Navigator.of(context).pushReplacementNamed(
         '/home',
         arguments: {'uid': user.uid},

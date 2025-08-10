@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,13 +13,20 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Hold splash 4 seconds, then decide route based on auth state
-    Timer(const Duration(seconds: 4), _goNext);
+    Timer(const Duration(seconds: 4), () {
+      _goNext();
+    });
   }
 
-  void _goNext() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
+  Future<void> _goNext() async {
+    final prefs = await SharedPreferences.getInstance();
+    final loggedIn = prefs.getBool('loggedIn') ?? false;
+
+    if (!mounted) {
+      return; // <-- CHECK IF WIDGET STILL MOUNTED BEFORE USING context
+    }
+
+    if (loggedIn) {
       Navigator.of(context).pushReplacementNamed('/home');
     } else {
       Navigator.of(context).pushReplacementNamed('/login');

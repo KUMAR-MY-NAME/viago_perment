@@ -26,6 +26,8 @@ dependencies:
   # Firebase Cloud Messaging (push notifications)
   firebase_messaging: ^14.9.1
 
+  shared_preferences: ^2.1.1
+
   # Firebase Storage
   firebase_storage: ^11.6.9
   crypto: ^3.0.3
