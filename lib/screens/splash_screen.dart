@@ -13,7 +13,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 4), () {
+    Timer(const Duration(seconds: 3), () {
       _goNext();
     });
   }
@@ -23,7 +23,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final loggedIn = prefs.getBool('loggedIn') ?? false;
 
     if (!mounted) {
-      return; // <-- CHECK IF WIDGET STILL MOUNTED BEFORE USING context
+      return;
     }
 
     if (loggedIn) {
@@ -35,8 +35,15 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: Text('App Logo', style: TextStyle(fontSize: 24))),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Image.asset(
+          'assets/images/viago_logo1.png',
+          width: 650,
+          height: 650,
+        ),
+      ),
     );
   }
 }

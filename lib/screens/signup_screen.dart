@@ -1,5 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/firebase_auth_service.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -16,6 +18,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
 
   bool _sendingOtp = false;
+  bool _obscurePassword = true;
 
   final _authService = FirebaseAuthService();
 
@@ -38,7 +41,16 @@ class _SignupScreenState extends State<SignupScreen> {
     try {
       final result = await _authService.sendOtp(
         phone,
-        codeSent: (verificationId, resendToken) {
+        codeSent: (verificationId, resendToken) async {
+          // ✅ Save to Firestore
+          await _createUserDocs(username, phone, password);
+
+          // ✅ Save locally
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString("username", username);
+          await prefs.setString("phone", phone);
+          await prefs.setBool("loggedIn", true); // 🔥 Mark user as logged in
+
           if (!mounted) return;
           Navigator.of(context).pushNamed(
             '/otp',
@@ -53,10 +65,16 @@ class _SignupScreenState extends State<SignupScreen> {
         },
       );
 
+      // For web confirmation (if applicable)
       if (!mounted) return;
-
-      // Web path (ConfirmationResult)
       if (result != null) {
+        await _createUserDocs(username, phone, password);
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("username", username);
+        await prefs.setString("phone", phone);
+        await prefs.setBool("loggedIn", true); // 🔥 Mark user as logged in
+
         Navigator.of(context).pushNamed(
           '/otp',
           arguments: {
@@ -78,16 +96,38 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+  /// 🔥 Creates documents in both `users` and `profiles`
+  Future<void> _createUserDocs(
+      String username, String phone, String password) async {
+    final firestore = FirebaseFirestore.instance;
+
+    await firestore.collection("users").doc(username).set({
+      "username": username,
+      "phone": phone,
+      "password": password, // ⚠️ hash in production
+      "createdAt": FieldValue.serverTimestamp(),
+    });
+
+    await firestore.collection("profiles").doc(username).set({
+      "username": username,
+      "phone": phone,
+      "name": "",
+      "age": "",
+      "gender": "",
+      "email": "",
+      "profileImage": "",
+      "updatedAt": FieldValue.serverTimestamp(),
+    });
+  }
+
   String? _validatePhone(String? v) {
     if (v == null || v.trim().isEmpty) return 'Phone required';
     if (!v.trim().startsWith('+')) return 'Include country code (e.g., +91...)';
     return null;
   }
 
-  // Fixed: added underscore to match usage in validator
   String? _validateUsername(String? v) {
     if (v == null || v.trim().isEmpty) return 'Username required';
-    // Allow letters, digits, underscore, dot. Min length 3.
     if (!RegExp(r'^[a-zA-Z0-9._]{3,}$').hasMatch(v)) {
       return 'Min 3 chars, letters/digits/_/.';
     }
@@ -102,55 +142,171 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const purple = Color(0xFF5A4FCF);
+    const orange = Color(0xFFF9A825);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign Up')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _phoneCtrl,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Phone (+CountryCode...)',
-                ),
-                validator: _validatePhone,
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.15,
+              child: Image.asset(
+                'assets/images/signup_image.png',
+                fit: BoxFit.contain,
               ),
-              TextFormField(
-                controller: _usernameCtrl,
-                decoration: const InputDecoration(labelText: 'Username'),
-                validator: _validateUsername, // now matches function name
-              ),
-              TextFormField(
-                controller: _passwordCtrl,
-                decoration: const InputDecoration(labelText: 'Password'),
-                obscureText: true,
-                validator: _validatePassword,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _sendingOtp ? null : _startSignup,
-                child: _sendingOtp
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Send OTP'),
-              ),
-              if (kIsWeb)
-                const Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: Text(
-                    'Note: On web, an invisible reCAPTCHA may appear.',
-                    style: TextStyle(fontSize: 12),
+            ),
+          ),
+          Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      RichText(
+                        text: TextSpan(
+                          style: GoogleFonts.poppins(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                            color: purple,
+                          ),
+                          children: const [
+                            TextSpan(text: 'Via'),
+                            TextSpan(
+                              text: 'Go',
+                              style: TextStyle(color: orange),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      TextFormField(
+                        controller: _usernameCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Username',
+                          labelStyle: GoogleFonts.poppins(),
+                          prefixIcon: const Icon(Icons.person, color: purple),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        style: GoogleFonts.poppins(),
+                        validator: _validateUsername,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordCtrl,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          labelStyle: GoogleFonts.poppins(),
+                          prefixIcon: const Icon(Icons.lock, color: purple),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              setState(
+                                  () => _obscurePassword = !_obscurePassword);
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        style: GoogleFonts.poppins(),
+                        validator: _validatePassword,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _phoneCtrl,
+                        keyboardType: TextInputType.phone,
+                        decoration: InputDecoration(
+                          labelText: '+91 PhoneNumber',
+                          labelStyle: GoogleFonts.poppins(),
+                          prefixIcon: const Icon(Icons.phone, color: purple),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        style: GoogleFonts.poppins(),
+                        validator: _validatePhone,
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: purple,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: _sendingOtp ? null : _startSignup,
+                          child: _sendingOtp
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  'Sign Up',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Already have an account?',
+                            style: GoogleFonts.poppins(),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context)
+                                  .pushReplacementNamed('/login');
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(0, 0),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              'Login In',
+                              style: GoogleFonts.poppins(
+                                color: orange,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-            ],
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
