@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "7500386422",
-    "project_id": "packmate-757bb",
-    "storage_bucket": "packmate-757bb.firebasestorage.app"
+    "project_number": "727408607976",
+    "project_id": "viago-d308a",
+    "storage_bucket": "viago-d308a.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:7500386422:android:99b95544bc65c817984f57",
+        "mobilesdk_app_id": "1:727408607976:android:becefd174b86a48a107f5d",
         "android_client_info": {
           "package_name": "com.example.packmate"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAvloCG3lz1hJQbolpizf_VlQmPyPUgpp8"
+          "current_key": "AIzaSyAnADpqlrqG_2rgrydm_Bg49OTJEQaykfY"
         }
       ],
       "services": {

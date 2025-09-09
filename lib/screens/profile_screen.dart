@@ -135,8 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final url = await _uploadImage(_imageFile!, username);
       if (url != null) {
         setState(() {
-          _profileImageUrl = url; // <-- update UI immediately
-          // _imageFile = null;         // (optional) clear local file after upload
+          _profileImageUrl = url;
         });
       }
     }
@@ -246,12 +245,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: CircleAvatar(
                   radius: 60,
                   backgroundImage: _imageFile != null
-                      ? (FileImage(_imageFile!)
-                          as ImageProvider<Object>) // <-- FIXED CAST
+                      ? FileImage(_imageFile!) as ImageProvider<Object>
                       : (_profileImageUrl != null &&
                               _profileImageUrl!.isNotEmpty
-                          ? (NetworkImage(_profileImageUrl!)
-                              as ImageProvider<Object>) // <-- FIXED CAST
+                          ? NetworkImage(_profileImageUrl!)
+                              as ImageProvider<Object>
                           : null),
                   child: _imageFile == null &&
                           (_profileImageUrl == null ||
