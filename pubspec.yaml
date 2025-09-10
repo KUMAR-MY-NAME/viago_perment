@@ -53,6 +53,7 @@ flutter:
     - assets/images/signup_image.png
     - assets/images/lock_symbol.png
     - assets/images/app_name.png
+    - assets/images/text_logo.png
 
 
 flutter_icons:

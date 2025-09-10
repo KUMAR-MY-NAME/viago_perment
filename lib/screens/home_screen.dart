@@ -64,12 +64,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       drawer: MenuScreen(username: username), // ✅ use MenuScreen
       appBar: AppBar(
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color.fromARGB(255, 82, 76, 161),
         centerTitle: true,
-        title: const Text(
-          "ViaGo",
-          style: TextStyle(
-              fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+        title: ClipRRect(
+          borderRadius: BorderRadius.circular(27), // ✅ Rounded logo
+          child: Image.asset(
+            'assets/images/text_logo.png',
+            height: 55,
+            fit: BoxFit.contain,
+          ),
         ),
         actions: [
           IconButton(
@@ -87,99 +90,150 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: Colors.deepPurple,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.directions_walk), label: "My Trips"),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 82, 76, 161),
+          borderRadius: BorderRadius.circular(40),
+        ),
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          currentIndex: _currentIndex,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white70,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
+            BottomNavigationBarItem(icon: Icon(Icons.directions_walk), label: ""),
+            BottomNavigationBarItem(icon: Icon(Icons.access_time), label: ""),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHomeContent(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
           width: double.infinity,
-          color: Colors.deepPurple,
-          padding: const EdgeInsets.all(12),
+          color: const Color.fromARGB(255, 82, 76, 161),
+          padding: const EdgeInsets.all(25),
           child: Text(
             "Welcome ${username ?? 'username'}",
             style: const TextStyle(color: Colors.white, fontSize: 18),
             textAlign: TextAlign.center,
           ),
         ),
-        Container(
-          color: Colors.deepPurple,
-          child: Column(
-            children: [
-              Container(height: 8, color: Colors.orange),
-              const SizedBox(height: 5),
-              Container(height: 8, color: Colors.green),
-            ],
-          ),
-        ),
         const SizedBox(height: 30),
-        _buildStyledButton(context, "Sender", Colors.deepPurple, Icons.person,
+        _buildStyledButton(context, "Sender", const Color.fromARGB(255, 82, 76, 161), Icons.person,
             const SenderScreen()),
-        _buildStyledButton(context, "Traveler", Colors.orange,
-            Icons.directions_walk, const TravelerScreen()),
-        _buildStyledButton(context, "Receiver", Colors.green, Icons.home,
+        _buildStyledButton(context, "Traveler",const Color.fromARGB(255, 215, 145, 65),
+            Icons.directions_walk, const TravelerScreen(), inverted: true),
+        _buildStyledButton(context, "Receiver", const Color.fromARGB(255, 168, 173, 95), Icons.home,
             const ReceiverScreen()),
       ],
     );
   }
 
   Widget _buildStyledButton(BuildContext context, String text, Color color,
-      IconData icon, Widget screen) {
+      IconData icon, Widget screen, {bool inverted = false}) {
+    final label = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      decoration: BoxDecoration(
+        color: Color.fromARGB(255, 255, 255, 255),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+            color: color, fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+    );
+
+    final iconCircle = Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: Color.fromARGB(255, 255, 255, 255),
+        shape: BoxShape.circle,
+        border: Border.all(color: color, width: 3),
+      ),
+      child: Icon(icon, color: color),
+    );
+
+    final stripes = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (i) {
+        return Container(
+          width: 18,
+          height: 6,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+        );
+      }),
+    );
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       child: GestureDetector(
         onTap: () {
           Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
         },
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: color, width: 2),
-            borderRadius: BorderRadius.circular(40),
-          ),
+        child: Center( // ✅ Centered buttons
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(width: 25, height: 3, color: color),
-                  const SizedBox(width: 4),
-                  Container(width: 25, height: 3, color: color),
-                  const SizedBox(width: 10),
-                  Text(
-                    text,
-                    style: TextStyle(
-                        color: color,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                    color: color, borderRadius: BorderRadius.circular(30)),
-                child: Icon(icon, color: Colors.white),
-              )
-            ],
+            mainAxisSize: MainAxisSize.min,
+            children: inverted
+                ? [
+                    iconCircle,
+                    const SizedBox(width: 12),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 240,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(36),
+                          ),
+                        ),
+                        Positioned(left: 16, child: stripes),
+                        Center(child:label),
+                      ],
+                    ),
+                  ]
+                : [
+                    Stack(
+                      alignment: Alignment.centerRight,
+                      children: [
+                        Container(
+                          width: 240,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(36),
+                          ),
+                        ),
+                        Positioned(right: 16, child: stripes),
+                        Positioned(right: 60, child: label),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    iconCircle,
+                  ],
           ),
         ),
       ),

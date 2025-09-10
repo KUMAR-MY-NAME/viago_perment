@@ -49,7 +49,7 @@ class _SignupScreenState extends State<SignupScreen> {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString("username", username);
           await prefs.setString("phone", phone);
-          await prefs.setBool("loggedIn", true); // 🔥 Mark user as logged in
+          await prefs.setBool("loggedIn", true);
 
           if (!mounted) return;
           Navigator.of(context).pushNamed(
@@ -65,7 +65,6 @@ class _SignupScreenState extends State<SignupScreen> {
         },
       );
 
-      // For web confirmation (if applicable)
       if (!mounted) return;
       if (result != null) {
         await _createUserDocs(username, phone, password);
@@ -73,7 +72,7 @@ class _SignupScreenState extends State<SignupScreen> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString("username", username);
         await prefs.setString("phone", phone);
-        await prefs.setBool("loggedIn", true); // 🔥 Mark user as logged in
+        await prefs.setBool("loggedIn", true);
 
         Navigator.of(context).pushNamed(
           '/otp',
@@ -142,8 +141,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const purple = Color(0xFF5A4FCF);
-    const orange = Color(0xFFF9A825);
+    const purple = Color.fromARGB(255, 81, 76, 161);
+    const orange = Color.fromARGB(255, 248, 175,0);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -168,19 +167,41 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      /// 🔥 Updated ViaGo text with shadow
                       RichText(
                         text: TextSpan(
                           style: GoogleFonts.poppins(
                             fontSize: 32,
-                            fontWeight: FontWeight.bold,
                             letterSpacing: 1,
-                            color: purple,
                           ),
-                          children: const [
-                            TextSpan(text: 'Via'),
+                          children: [
+                            TextSpan(
+                              text: 'Via',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.normal,
+                                color: purple,
+                                shadows: const [
+                                  Shadow(
+                                    offset: Offset(2, 2),
+                                    blurRadius: 4,
+                                    color: purple,
+                                  ),
+                                ],
+                              ),
+                            ),
                             TextSpan(
                               text: 'Go',
-                              style: TextStyle(color: orange),
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                                color: orange,
+                                shadows: const [
+                                  Shadow(
+                                    offset: Offset(2, 2),
+                                    blurRadius: 4,
+                                    color: orange,
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
