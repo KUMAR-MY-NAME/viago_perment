@@ -14,6 +14,7 @@ dependencies:
   # iOS-style icons
   cupertino_icons: ^1.0.6
   google_fonts: ^6.1.0
+  intl: ^0.18.1
 
   # Firebase core (for Flutter 3.19.6, compatible version)
   firebase_core: ^2.30.1
@@ -34,6 +35,7 @@ dependencies:
   crypto: ^3.0.3
   pin_code_fields: ^8.0.1
   image_picker: ^1.1.2
+  uuid: ^3.0.7
 
 
 dev_dependencies:
@@ -42,12 +44,12 @@ dev_dependencies:
 
   # Recommended lints
   flutter_lints: ^3.0.0
-  flutter_launcher_icons: ^0.13.1   # <--- Place it here
+  flutter_launcher_icons: ^0.13.1 # The package itself
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/logo/viago_logo.png     # <--- Add your image asset here
+    - assets/logo/viago_logo.png
     - assets/images/viago_logo1.png
     - assets/images/login_image.png
     - assets/images/signup_image.png
@@ -55,8 +57,7 @@ flutter:
     - assets/images/app_name.png
     - assets/images/text_logo.png
 
-
-flutter_icons:
-  android: true
+flutter_launcher_icons: # The configuration for the package
+  android: "launcher_icon"
   ios: true
   image_path: "assets/logo/viago_logo.png"

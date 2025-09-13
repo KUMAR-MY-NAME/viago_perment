@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,8 +10,8 @@ import 'receiver_screen.dart';
 import 'my_trips_screen.dart';
 import 'history_screen.dart';
 import 'profile_screen.dart';
-import 'menu_screen.dart'; // ✅ new
-import 'notification_screen.dart'; // ✅ new
+import 'menu_screen.dart';
+import 'notification_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -54,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _screens = [
+    final List<Widget> screens = [
       _buildHomeContent(context),
       const MyTripsScreen(),
       const HistoryScreen(),
@@ -62,15 +63,15 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
-      drawer: MenuScreen(username: username), // ✅ use MenuScreen
+      drawer: MenuScreen(username: username),
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(255, 82, 76, 161),
         centerTitle: true,
         title: ClipRRect(
-          borderRadius: BorderRadius.circular(27), // ✅ Rounded logo
+          borderRadius: BorderRadius.circular(27),
           child: Image.asset(
             'assets/images/text_logo.png',
-            height: 55,
+            height: 35,
             fit: BoxFit.contain,
           ),
         ),
@@ -80,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
               );
             },
           )
@@ -88,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: screens,
       ),
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(12),
@@ -98,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(40),
         ),
         child: BottomNavigationBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: const Color.fromARGB(0, 255, 0, 0),
           elevation: 0,
           type: BottomNavigationBarType.fixed,
           currentIndex: _currentIndex,
@@ -110,10 +111,22 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           },
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
-            BottomNavigationBarItem(icon: Icon(Icons.directions_walk), label: ""),
-            BottomNavigationBarItem(icon: Icon(Icons.access_time), label: ""),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home, size: 30),
+              label: "",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.luggage, size: 30),
+              label: "",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.history, size: 30),
+              label: "",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person, size: 30),
+              label: "",
+            ),
           ],
         ),
       ),
@@ -127,114 +140,119 @@ class _HomeScreenState extends State<HomeScreen> {
         Container(
           width: double.infinity,
           color: const Color.fromARGB(255, 82, 76, 161),
-          padding: const EdgeInsets.all(25),
+          padding: const EdgeInsets.all(16),
           child: Text(
             "Welcome ${username ?? 'username'}",
-            style: const TextStyle(color: Colors.white, fontSize: 18),
+            style: GoogleFonts.poppins(color: Colors.white, fontSize: 18),
             textAlign: TextAlign.center,
           ),
         ),
         const SizedBox(height: 30),
-        _buildStyledButton(context, "Sender", const Color.fromARGB(255, 82, 76, 161), Icons.person,
-            const SenderScreen()),
-        _buildStyledButton(context, "Traveler",const Color.fromARGB(255, 215, 145, 65),
-            Icons.directions_walk, const TravelerScreen(), inverted: true),
-        _buildStyledButton(context, "Receiver", const Color.fromARGB(255, 168, 173, 95), Icons.home,
-            const ReceiverScreen()),
+        _buildActionPanel(
+          context,
+          "Sender",
+          const Color(0xFF514ca1),
+          Icons.person,
+          const SenderScreen(),
+        ),
+        _buildActionPanel(
+          context,
+          "Traveler",
+          const Color(0xFFd79141),
+          Icons.directions_run,
+          const TravelerScreen(),
+        ),
+        _buildActionPanel(
+          context,
+          "Receiver",
+          const Color(0xFFa8ad5f),
+          Icons.home,
+          const ReceiverScreen(),
+        ),
+        const SizedBox(height: 50),
       ],
     );
   }
 
-  Widget _buildStyledButton(BuildContext context, String text, Color color,
-      IconData icon, Widget screen, {bool inverted = false}) {
-    final label = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      decoration: BoxDecoration(
-        color: Color.fromARGB(255, 255, 255, 255),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-            color: color, fontSize: 16, fontWeight: FontWeight.bold),
-      ),
-    );
-
-    final iconCircle = Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: Color.fromARGB(255, 255, 255, 255),
-        shape: BoxShape.circle,
-        border: Border.all(color: color, width: 3),
-      ),
-      child: Icon(icon, color: color),
-    );
-
-    final stripes = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(3, (i) {
-        return Container(
-          width: 18,
-          height: 6,
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(8),
-          ),
-        );
-      }),
-    );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
-        },
-        child: Center( // ✅ Centered buttons
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: inverted
-                ? [
-                    iconCircle,
-                    const SizedBox(width: 12),
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 240,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(36),
-                          ),
-                        ),
-                        Positioned(left: 16, child: stripes),
-                        Center(child:label),
-                      ],
-                    ),
-                  ]
-                : [
-                    Stack(
-                      alignment: Alignment.centerRight,
-                      children: [
-                        Container(
-                          width: 240,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(36),
-                          ),
-                        ),
-                        Positioned(right: 16, child: stripes),
-                        Positioned(right: 60, child: label),
-                      ],
-                    ),
-                    const SizedBox(width: 12),
-                    iconCircle,
-                  ],
-          ),
+  Widget _buildActionPanel(
+      BuildContext context,
+      String title,
+      Color color,
+      IconData icon,
+      Widget screen,
+      ) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Stack(
+          children: [
+            Container(
+              height: 80,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(50),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.5),
+                    spreadRadius: 2,
+                    blurRadius: 5,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              left: 10,
+              top: 10,
+              bottom: 10,
+              child: Container(
+                width: 60,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 30),
+              ),
+            ),
+            Positioned(
+              left: 85,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 15,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: Row(
+                  children: List.generate(3, (i) {
+                    return Container(
+                      width: 18,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

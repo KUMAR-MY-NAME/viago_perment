@@ -1,14 +1,21 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/user_model.dart';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../models/user_model.dart';
+import '../models/parcel.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Collections
+  String get uid => _auth.currentUser!.uid;
+
+  /// ---------------- COLLECTION REFERENCES -----------------
   CollectionReference get users => _db.collection('users');
   CollectionReference get usernames => _db.collection('usernames');
-  CollectionReference get packages => _db.collection('packages'); // 👈 new
+  CollectionReference get parcels => _db.collection('parcels');
+  CollectionReference get trips => _db.collection('trips');
 
   /// ---------------- USERNAME / USER -----------------
 
@@ -17,17 +24,13 @@ class FirestoreService {
     return !doc.exists;
   }
 
-  // Transactional reservation to avoid race conditions
   Future<bool> tryReserveUsername(String username, String uid) async {
     final uname = username.toLowerCase();
     final unameRef = usernames.doc(uname);
 
     return await _db.runTransaction<bool>((tx) async {
       final snap = await tx.get(unameRef);
-      if (snap.exists) {
-        // Already reserved/taken
-        return false;
-      }
+      if (snap.exists) return false;
       tx.set(unameRef, {
         'uid': uid,
         'reservedAt': FieldValue.serverTimestamp(),
@@ -58,61 +61,124 @@ class FirestoreService {
     await users.doc(uid).update({'passwordHash': newHash});
   }
 
-  /// ---------------- PACKAGE HELPERS -----------------
+  /// ---------------- PARCELS -----------------
 
-  /// Generate a random 6-digit OTP
+  Future<String> createParcel(Parcel p) async {
+    final ref = parcels.doc();
+    await ref.set(p.toMap());
+    await ref.update({'id': ref.id});
+    return ref.id;
+  }
+
+  Future<void> updateParcel(String id, Map<String, dynamic> data) async {
+    data['updatedAt'] = FieldValue.serverTimestamp();
+    await parcels.doc(id).update(data);
+  }
+
+  Stream<List<Parcel>> streamParcelsByRoute(String fromCity, String toCity) {
+    return parcels
+        .where('pickupCity', isEqualTo: fromCity)
+        .where('destCity', isEqualTo: toCity)
+        .where('status', isEqualTo: 'posted')
+        .snapshots()
+        .map((s) => s.docs.map((d) => Parcel.fromDoc(d)).toList());
+  }
+
+  Stream<List<Parcel>> streamMyParcelsAsSender() {
+    return parcels
+        .where('createdByUid', isEqualTo: uid)
+        .snapshots()
+        .map((s) => s.docs.map((d) => Parcel.fromDoc(d)).toList());
+  }
+
+  Stream<List<Parcel>> streamMyParcelsAsTraveler() {
+    return parcels
+        .where('assignedTravelerUid', isEqualTo: uid)
+        .snapshots()
+        .map((s) => s.docs.map((d) => Parcel.fromDoc(d)).toList());
+  }
+
+  Stream<List<Parcel>> streamMyParcelsAsReceiver() {
+    return parcels
+        .where('trackedReceiverUid', isEqualTo: uid)
+        .snapshots()
+        .map((s) => s.docs.map((d) => Parcel.fromDoc(d)).toList());
+  }
+
+  /// ---------------- TRIPS -----------------
+
+  Future<void> upsertTrip(String uid, Map<String, dynamic> tripData) async {
+    final ref = trips.doc(uid);
+    await ref.set(tripData, SetOptions(merge: true));
+  }
+
+  /// ---------------- OTP / NOTIFICATIONS -----------------
+
   String _generateOtp() {
     final rand = Random();
     return (100000 + rand.nextInt(900000)).toString();
   }
 
-  /// Create a new package (from sender)
-  Future<String> createPackage(Map<String, dynamic> packageData) async {
-    final otp = _generateOtp();
-    final docRef = await packages.add({
-      ...packageData,
-      'otp': otp, // 🔹 store OTP
-      'status': 'pending',
+  Future<String> createAndSendOtp({
+    required String parcelId,
+    required String type, // confirm | delivery
+    required String targetUid,
+  }) async {
+    final code = _generateOtp();
+
+    // Save notification under target user
+    final notifRef = users.doc(targetUid).collection('notifications').doc();
+    await notifRef.set({
+      'id': notifRef.id,
+      'parcelId': parcelId,
+      'type': type,
+      'code': code,
+      'status': 'sent',
       'createdAt': FieldValue.serverTimestamp(),
     });
-    return docRef.id;
-  }
 
-  /// Update package status (e.g. pending, requested, accepted, delivered)
-  Future<void> updatePackageStatus(String packageId, String status) async {
-    await packages.doc(packageId).update({
-      'status': status,
+    // Store pending OTP on parcel
+    await parcels.doc(parcelId).update({
+      'pendingOtp': {'type': type, 'code': code, 'toUid': targetUid},
       'updatedAt': FieldValue.serverTimestamp(),
     });
+
+    return code;
   }
 
-  /// ✅ Get OTP for a specific package (always return as String)
-  Future<String?> getPackageOtp(String packageId) async {
-    final doc = await packages.doc(packageId).get();
-    if (!doc.exists) return null;
+  Future<bool> verifyOtp(String parcelId, String enteredCode) async {
+    final doc = await parcels.doc(parcelId).get();
+    final d = doc.data() as Map<String, dynamic>?;
+    if (d == null || d['pendingOtp'] == null) return false;
 
-    final data = doc.data() as Map<String, dynamic>?;
-    if (data == null) return null;
+    final pending = Map<String, dynamic>.from(d['pendingOtp']);
+    if (pending['code'] == enteredCode) {
+      final type = pending['type'] as String;
 
-    final otp = data['otp'];
-    if (otp == null) return null;
+      final updates = <String, dynamic>{
+        'pendingOtp': FieldValue.delete(),
+        'updatedAt': FieldValue.serverTimestamp()
+      };
 
-    return otp.toString(); // 🔹 ensures int/string is always returned as String
-  }
+      if (type == 'confirm') updates['status'] = 'confirmed';
+      if (type == 'delivery') updates['status'] = 'delivered';
 
-  /// Get packages going to a specific destination (for travelers)
-  Stream<QuerySnapshot> getPackagesForDestination(String destination) {
-    return packages
-        .where('receiverAddress', isEqualTo: destination)
-        .snapshots();
-  }
+      await parcels.doc(parcelId).update(updates);
 
-  /// Assign a traveler to a package
-  Future<void> assignTraveler(String packageId, String travelerId) async {
-    await packages.doc(packageId).update({
-      'travelerId': travelerId,
-      'status': 'accepted',
-      'acceptedAt': FieldValue.serverTimestamp(),
-    });
+      // Store notification for traveler
+      final travelerUid = _auth.currentUser!.uid;
+      final tnotif = users.doc(travelerUid).collection('notifications').doc();
+      await tnotif.set({
+        'id': tnotif.id,
+        'parcelId': parcelId,
+        'type': 'verification',
+        'code': enteredCode,
+        'status': 'verified',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      return true;
+    }
+    return false;
   }
 }

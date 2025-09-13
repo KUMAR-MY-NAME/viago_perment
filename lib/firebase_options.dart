@@ -50,21 +50,21 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDuTL6YjrFJD9O3kouirtW219qFv_CyHGU',
-    appId: '1:7500386422:web:d526396cc15eacb2984f57',
-    messagingSenderId: '7500386422',
-    projectId: 'packmate-757bb',
-    authDomain: 'packmate-757bb.firebaseapp.com',
-    storageBucket: 'packmate-757bb.firebasestorage.app',
-    measurementId: 'G-2Z4PGW0H8F',
+    apiKey: 'AIzaSyDhJuJhAhgJ53WhvoBEctOADIpl7rcHR3w',
+    appId: '1:727408607976:web:d40b7e90cb87fa87107f5d',
+    messagingSenderId: '727408607976',
+    projectId: 'viago-d308a',
+    authDomain: 'viago-d308a.firebaseapp.com',
+    storageBucket: 'viago-d308a.firebasestorage.app',
+    measurementId: 'G-FLTN2YQHKK',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAvloCG3lz1hJQbolpizf_VlQmPyPUgpp8',
-    appId: '1:7500386422:android:99b95544bc65c817984f57',
-    messagingSenderId: '7500386422',
-    projectId: 'packmate-757bb',
-    storageBucket: 'packmate-757bb.firebasestorage.app',
+    apiKey: 'AIzaSyAnADpqlrqG_2rgrydm_Bg49OTJEQaykfY',
+    appId: '1:727408607976:android:becefd174b86a48a107f5d',
+    messagingSenderId: '727408607976',
+    projectId: 'viago-d308a',
+    storageBucket: 'viago-d308a.firebasestorage.app',
   );
 
 }
