@@ -165,7 +165,16 @@ class FirestoreService {
 
       await parcels.doc(parcelId).update(updates);
 
-      // Store notification for traveler
+      // Fetch parcel details to get sender and receiver UIDs
+      final updatedParcelDoc = await parcels.doc(parcelId).get();
+      final updatedParcelData = updatedParcelDoc.data() as Map<String, dynamic>;
+      final senderUid = updatedParcelData['createdByUid'] as String;
+      final receiverUid = updatedParcelData['receiverUid'] as String?;
+      final assignedTravelerUid = updatedParcelData['assignedTravelerUid'] as String?;
+      final parcelContents = updatedParcelData['contents'] as String;
+
+
+      // Store notification for traveler (who verified the OTP)
       final travelerUid = _auth.currentUser!.uid;
       final tnotif = users.doc(travelerUid).collection('notifications').doc();
       await tnotif.set({
@@ -177,8 +186,98 @@ class FirestoreService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      if (type == 'delivery') {
+        // Notify traveler about successful delivery
+        if (assignedTravelerUid != null) {
+          await sendNotification(
+            recipientUid: assignedTravelerUid,
+            message: 'Package "$parcelContents" delivered successfully!',
+            type: 'delivery_success',
+            parcelId: parcelId,
+          );
+        }
+
+        // Notify sender about successful delivery
+        await sendNotification(
+          recipientUid: senderUid,
+          message: 'Your package "$parcelContents" has been delivered successfully!',
+          type: 'delivery_success',
+          parcelId: parcelId,
+        );
+
+        // Notify receiver about successful delivery
+        if (receiverUid != null) {
+          await sendNotification(
+            recipientUid: receiverUid,
+            message: 'Your package "$parcelContents" has been delivered successfully!',
+            type: 'delivery_success',
+            parcelId: parcelId,
+          );
+        }
+      } else if (type == 'confirm') {
+        // Notify sender about confirmed order
+        await sendNotification(
+          recipientUid: senderUid,
+          message: 'Your package "$parcelContents" has been confirmed by the traveler!',
+          type: 'order_confirmed',
+          parcelId: parcelId,
+        );
+
+        // Notify traveler about confirmed order
+        if (assignedTravelerUid != null) {
+          await sendNotification(
+            recipientUid: assignedTravelerUid,
+            message: 'You have confirmed the order for package "$parcelContents".',
+            type: 'order_confirmed',
+            parcelId: parcelId,
+          );
+        }
+      }
+
       return true;
     }
     return false;
+  }
+
+  Future<void> sendNotification({
+    required String recipientUid,
+    required String message,
+    required String type,
+    String? parcelId,
+  }) async {
+    await users.doc(recipientUid).collection('notifications').add({
+      'message': message,
+      'type': type,
+      'parcelId': parcelId,
+      'createdAt': FieldValue.serverTimestamp(),
+      'read': false, // New field to track if notification has been read
+    });
+  }
+
+  /// ---------------- CHAT -----------------
+
+  String getChatRoomId(String parcelId, String user1, String user2) {
+    if (user1.hashCode <= user2.hashCode) {
+      return '$parcelId\_$user1\_$user2';
+    } else {
+      return '$parcelId\_$user2\_$user1';
+    }
+  }
+
+  Future<void> sendMessage(String chatRoomId, String text, String senderId) async {
+    await _db.collection('chats').doc(chatRoomId).collection('messages').add({
+      'text': text,
+      'senderId': senderId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Stream<QuerySnapshot> streamMessages(String chatRoomId) {
+    return _db
+        .collection('chats')
+        .doc(chatRoomId)
+        .collection('messages')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
   }
 }

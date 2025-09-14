@@ -4,6 +4,7 @@ class Traveler {
   String id; // same as uid
   String travelerUid;
   String travelerName;
+  String phone;
   String fromCity;
   String toCity;
   DateTime travelDate;
@@ -15,6 +16,7 @@ class Traveler {
     required this.id,
     required this.travelerUid,
     required this.travelerName,
+    required this.phone,
     required this.fromCity,
     required this.toCity,
     required this.travelDate,
@@ -29,6 +31,7 @@ class Traveler {
       id: doc.id,
       travelerUid: d['travelerUid'],
       travelerName: d['travelerName'] ?? '',
+      phone: d['phone'] ?? '',
       fromCity: d['fromCity'] ?? '',
       toCity: d['toCity'] ?? '',
       travelDate: (d['travelDate'] as Timestamp).toDate(),
@@ -41,6 +44,7 @@ class Traveler {
   Map<String, dynamic> toMap() => {
         'travelerUid': travelerUid,
         'travelerName': travelerName,
+        'phone': phone,
         'fromCity': fromCity,
         'toCity': toCity,
         'travelDate': Timestamp.fromDate(travelDate),

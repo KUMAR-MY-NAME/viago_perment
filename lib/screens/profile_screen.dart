@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:packmate/main.dart'; // Import main.dart to access _MyAppState
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,6 +19,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   File? _imageFile;
   String? _profileImageUrl;
+  double _averageRating = 0.0;
+  int _ratingCount = 0;
 
   final _usernameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -74,6 +77,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _genderController.text = data["gender"] ?? "";
           _emailController.text = data["email"] ?? "";
           _profileImageUrl = data["profileImage"];
+          _averageRating = (data['averageRating'] ?? 0.0).toDouble();
+          _ratingCount = data['ratingCount'] ?? 0;
         });
       }
     }
@@ -176,6 +181,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
+            leading: const Icon(Icons.brightness_6),
+            title: const Text("Theme Mode"),
+            onTap: () {
+              Navigator.pop(ctx); // Close current bottom sheet
+              _showThemeModeSelectionDialog(ctx);
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text("Logout"),
             onTap: () async {
@@ -221,6 +234,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _showThemeModeSelectionDialog(BuildContext ctx) {
+    showDialog(
+      context: ctx,
+      builder: (dialogContext) {
+        // Get current theme mode from MyAppState
+        final MyAppState? myAppState = MyApp.of(dialogContext);
+        ThemeMode currentThemeMode = myAppState?.themeMode ?? ThemeMode.system;
+
+        return AlertDialog(
+          title: const Text("Select Theme Mode"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: ThemeMode.values.map((mode) {
+              return RadioListTile<ThemeMode>(
+                title: Text(mode.toString().split('.').last.toCapitalized()),
+                value: mode,
+                groupValue: currentThemeMode,
+                onChanged: (ThemeMode? newMode) {
+                  if (newMode != null) {
+                    myAppState?.setThemeMode(newMode);
+                    Navigator.pop(dialogContext); // Close dialog after selection
+                  }
+                },
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Cancel"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   /// ✅ UI
   @override
   Widget build(BuildContext context) {
@@ -258,6 +308,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : null,
                 ),
               ),
+              const SizedBox(height: 16),
+              _buildRatingDisplay(),
               const SizedBox(height: 20),
               TextFormField(
                 controller: _usernameController,
@@ -309,4 +361,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
+  Widget _buildRatingDisplay() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(5, (index) {
+            return Icon(
+              index < _averageRating ? Icons.star : Icons.star_border,
+              color: Colors.amber,
+              size: 30,
+            );
+          }),
+        ),
+        const SizedBox(height: 4),
+        Text('$_ratingCount reviews'),
+      ],
+    );
+  }
+}
+
+extension StringExtension on String {
+  String toCapitalized() => length > 0 ? '${this[0].toUpperCase()}${substring(1).toLowerCase()}' : '';
 }

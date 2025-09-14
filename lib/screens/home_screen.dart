@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       drawer: MenuScreen(username: username),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 82, 76, 161),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         centerTitle: true,
         title: ClipRRect(
           borderRadius: BorderRadius.circular(27),
@@ -77,7 +77,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.white),
+            icon: Icon(Icons.notifications,
+                color: Theme.of(context).colorScheme.onPrimary),
             onPressed: () {
               Navigator.push(
                 context,
@@ -95,16 +96,17 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 82, 76, 161),
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.circular(40),
         ),
         child: BottomNavigationBar(
-          backgroundColor: const Color.fromARGB(0, 255, 0, 0),
+          backgroundColor: Colors.transparent,
           elevation: 0,
           type: BottomNavigationBarType.fixed,
           currentIndex: _currentIndex,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white70,
+          selectedItemColor: Theme.of(context).colorScheme.onPrimary,
+          unselectedItemColor:
+              Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
           onTap: (index) {
             setState(() {
               _currentIndex = index;
@@ -139,11 +141,12 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Container(
           width: double.infinity,
-          color: const Color.fromARGB(255, 82, 76, 161),
+          color: Theme.of(context).colorScheme.primary,
           padding: const EdgeInsets.all(16),
           child: Text(
             "Welcome ${username ?? 'username'}",
-            style: GoogleFonts.poppins(color: Colors.white, fontSize: 18),
+            style: GoogleFonts.poppins(
+                color: Theme.of(context).colorScheme.onPrimary, fontSize: 18),
             textAlign: TextAlign.center,
           ),
         ),
@@ -151,21 +154,21 @@ class _HomeScreenState extends State<HomeScreen> {
         _buildActionPanel(
           context,
           "Sender",
-          const Color(0xFF514ca1),
+          Theme.of(context).colorScheme.primary, // Use primary color
           Icons.person,
           const SenderScreen(),
         ),
         _buildActionPanel(
           context,
           "Traveler",
-          const Color(0xFFd79141),
+          Theme.of(context).colorScheme.tertiary, // Use tertiary color
           Icons.directions_run,
           const TravelerScreen(),
         ),
         _buildActionPanel(
           context,
           "Receiver",
-          const Color(0xFFa8ad5f),
+          Theme.of(context).colorScheme.secondary, // Use secondary color
           Icons.home,
           const ReceiverScreen(),
         ),
@@ -175,12 +178,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActionPanel(
-      BuildContext context,
-      String title,
-      Color color,
-      IconData icon,
-      Widget screen,
-      ) {
+    BuildContext context,
+    String title,
+    Color color,
+    IconData icon,
+    Widget screen,
+  ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(context, MaterialPageRoute(builder: (_) => screen));

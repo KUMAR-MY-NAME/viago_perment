@@ -11,20 +11,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:packmate/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('App starts and shows SplashScreen', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Wait for the app to settle (e.g., SplashScreen animations)
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify that the MaterialApp title is present (or some text from SplashScreen)
+    expect(find.text('Auth Phase 1'), findsOneWidget);
+    // You might also want to check for specific widgets from SplashScreen
+    // For example: expect(find.byType(SplashScreen), findsOneWidget);
   });
 }

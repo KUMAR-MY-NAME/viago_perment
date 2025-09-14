@@ -18,11 +18,12 @@ def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '
 
 android {
     namespace "com.example.packmate"
-    compileSdk flutter.compileSdkVersion
+
+    // 🔥 Force compileSdk 35 (needed for flutter_sound + Firebase)
+    compileSdkVersion 34
     ndkVersion flutter.ndkVersion
 
     compileOptions {
-        // Use Java 17 for AGP 8 + Firebase
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
@@ -37,11 +38,18 @@ android {
 
     defaultConfig {
         applicationId "com.example.packmate"
-        minSdkVersion 21 // Firebase requires at least 21
-        targetSdkVersion flutter.targetSdkVersion
+
+        // 🔥 Raise minSdk to 24 (flutter_sound requires this)
+        minSdkVersion 24
+
+        // Target latest stable
+        targetSdkVersion 34
+
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-        multiDexEnabled true // Prevents method limit issues
+
+        // Prevents 64K method limit issues
+        multiDexEnabled true
     }
 
     buildTypes {

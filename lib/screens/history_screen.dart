@@ -14,17 +14,17 @@ class HistoryScreen extends StatelessWidget {
     final asSender = FirebaseFirestore.instance
         .collection('parcels')
         .where('createdByUid', isEqualTo: uid)
-        .where('status', isEqualTo: 'delivered');
+        .where('status', whereIn: ['delivered', 'canceled']);
 
     final asTraveler = FirebaseFirestore.instance
         .collection('parcels')
         .where('assignedTravelerUid', isEqualTo: uid)
-        .where('status', isEqualTo: 'delivered');
+        .where('status', whereIn: ['delivered', 'canceled']);
 
     final asReceiver = FirebaseFirestore.instance
         .collection('parcels')
         .where('trackedReceiverUid', isEqualTo: uid)
-        .where('status', isEqualTo: 'delivered');
+        .where('status', whereIn: ['delivered', 'canceled']);
 
     return DefaultTabController(
       length: 3,
@@ -54,7 +54,9 @@ class HistoryScreen extends StatelessWidget {
     return StreamBuilder<QuerySnapshot>(
       stream: q.snapshots(),
       builder: (c, s) {
-        if (!s.hasData) return const Center(child: CircularProgressIndicator());
+        if (!s.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
         final docs = s.data!.docs;
         if (docs.isEmpty) {
           return const Center(child: Text('No delivered packages yet'));
@@ -81,7 +83,6 @@ class HistoryScreen extends StatelessWidget {
                             builder: (_) => PackageDetailScreen(
                               parcelId: docs[i].id,
                               role: role,
-                              parcel: d,
                             ),
                           ),
                         );

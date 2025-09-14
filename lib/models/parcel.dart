@@ -7,6 +7,7 @@ class Parcel {
   String senderPhone;
 
   // Parcel details
+  String category;
   DateTime pickupDate;
   String contents;
   double goodsValue;
@@ -43,8 +44,7 @@ class Parcel {
   double price;
 
   // Workflow
-  String
-      status; // posted | selected | confirmed | in_transit | delivered | canceled
+    String status; // posted | selected | confirmed | in_transit | delivered | canceled
   String? assignedTravelerUid;
   String? assignedTravelerName;
   String confirmationWho; // 'sender' or 'receiver'
@@ -55,6 +55,13 @@ class Parcel {
   Map<String, dynamic>?
       pendingOtp; // { 'type': 'confirm'|'delivery', 'code': '123456', 'toUid': 'uid' }
 
+  String paymentStatus; // 'unpaid' | 'paid' | 'pending_on_delivery'
+
+  double? latitude;
+  double? longitude;
+
+  String? deliveryProofUrl;
+
   DateTime createdAt;
   DateTime updatedAt;
 
@@ -63,6 +70,7 @@ class Parcel {
     required this.createdByUid,
     required this.senderName,
     required this.senderPhone,
+    required this.category,
     required this.pickupDate,
     required this.contents,
     required this.goodsValue,
@@ -95,6 +103,10 @@ class Parcel {
     required this.confirmationWho,
     this.trackedReceiverUid,
     this.pendingOtp,
+    required this.paymentStatus,
+    this.latitude,
+    this.longitude,
+    this.deliveryProofUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -106,6 +118,7 @@ class Parcel {
       createdByUid: d['createdByUid'],
       senderName: d['senderName'] ?? '',
       senderPhone: d['senderPhone'] ?? '',
+      category: d['category'] ?? '',
       pickupDate: (d['pickupDate'] as Timestamp).toDate(),
       contents: d['contents'] ?? '',
       goodsValue: (d['goodsValue'] ?? 0).toDouble(),
@@ -141,6 +154,10 @@ class Parcel {
       pendingOtp: d['pendingOtp'] != null
           ? Map<String, dynamic>.from(d['pendingOtp'])
           : null,
+      paymentStatus: d['paymentStatus'] ?? 'unpaid',
+      latitude: (d['latitude'] ?? 0.0).toDouble(),
+      longitude: (d['longitude'] ?? 0.0).toDouble(),
+      deliveryProofUrl: d['deliveryProofUrl'],
       createdAt: (d['createdAt'] as Timestamp).toDate(),
       updatedAt: (d['updatedAt'] as Timestamp).toDate(),
     );
@@ -150,6 +167,7 @@ class Parcel {
         'createdByUid': createdByUid,
         'senderName': senderName,
         'senderPhone': senderPhone,
+        'category': category,
         'pickupDate': Timestamp.fromDate(pickupDate),
         'contents': contents,
         'goodsValue': goodsValue,
@@ -182,7 +200,12 @@ class Parcel {
         'confirmationWho': confirmationWho,
         'trackedReceiverUid': trackedReceiverUid,
         'pendingOtp': pendingOtp,
+        'paymentStatus': paymentStatus,
+        'latitude': latitude,
+        'longitude': longitude,
+        'deliveryProofUrl': deliveryProofUrl,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       }..removeWhere((k, v) => v == null);
+  
 }

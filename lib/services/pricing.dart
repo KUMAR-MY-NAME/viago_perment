@@ -1,4 +1,6 @@
 class Pricing {
+  static const double _platformFeePercentage = 0.10; // 10% platform fee
+
   static double volumetricWeightKg({
     required double lCm,
     required double wCm,
@@ -30,6 +32,22 @@ class Pricing {
     if (fast) extras += 79;
 
     final raw = baseFare + (perKm * distanceKm) + (perKg * billable) + extras;
-    return raw < minCharge ? minCharge : double.parse(raw.toStringAsFixed(2));
+    final basePrice = raw < minCharge ? minCharge : double.parse(raw.toStringAsFixed(2));
+
+    // Calculate platform fee
+    final platformFee = basePrice * _platformFeePercentage;
+
+    // Total price includes platform fee
+    return double.parse((basePrice + platformFee).toStringAsFixed(2));
+  }
+
+  // New method to get just the platform fee for a given base price
+  static double getPlatformFee(double basePrice) {
+    return double.parse((basePrice * _platformFeePercentage).toStringAsFixed(2));
+  }
+
+  // New method to get the amount the traveler receives
+  static double getTravelerEarning(double totalPackagePrice) {
+    return double.parse((totalPackagePrice * (1 - _platformFeePercentage)).toStringAsFixed(2));
   }
 }

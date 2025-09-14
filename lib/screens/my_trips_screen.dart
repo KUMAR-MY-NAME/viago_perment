@@ -1,29 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'package:packmate/screens/package_detail_screen.dart';
+import 'package:packmate/models/parcel.dart';
 
-class MyTripsScreen extends StatelessWidget {
+class MyTripsScreen extends StatefulWidget {
   const MyTripsScreen({super.key});
 
   @override
+  State<MyTripsScreen> createState() => _MyTripsScreenState();
+}
+
+class _MyTripsScreenState extends State<MyTripsScreen> {
+  final User? currentUser = FirebaseAuth.instance.currentUser;
+  String _searchQuery = '';
+  DateTime? _selectedDate;
+  String _selectedParcelType = 'All'; // 'All', 'Fragile', 'Fast Delivery'
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    final asSender = FirebaseFirestore.instance
-        .collection('parcels')
-        .where('createdByUid', isEqualTo: uid);
-    final asTraveler = FirebaseFirestore.instance
-        .collection('parcels')
-        .where('assignedTravelerUid', isEqualTo: uid);
-    final asReceiver = FirebaseFirestore.instance
-        .collection('parcels')
-        .where('trackedReceiverUid', isEqualTo: uid);
+    if (currentUser == null) {
+      return const Center(child: Text('Please log in to view your trips.'));
+    }
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('MyTrip'),
+          title: const Text('My Trips'),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Sender'),
@@ -32,20 +51,120 @@ class MyTripsScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: TabBarView(
+        body: Column(
           children: [
-            _list(asSender, role: 'sender'),
-            _list(asTraveler, role: 'traveler'),
-            _list(asReceiver, role: 'receiver'),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                decoration: InputDecoration(
+                  labelText: 'Search by City or Address',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.toLowerCase();
+                  });
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _selectDate(context),
+                      icon: const Icon(Icons.calendar_today),
+                      label: Text(
+                        _selectedDate == null
+                            ? 'Select Date'
+                            : DateFormat('yyyy-MM-dd').format(_selectedDate!),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedParcelType,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                      ),
+                      items: <String>['All', 'Fragile', 'Fast Delivery']
+                          .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedParcelType = newValue!;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildParcelList(role: 'sender'),
+                  _buildParcelList(role: 'traveler'),
+                  _buildParcelList(role: 'receiver'),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _list(Query q, {required String role}) {
+  Widget _buildParcelList({required String role}) {
+    Query query = FirebaseFirestore.instance.collection('parcels')
+        .where('status', whereIn: ['posted', 'selected', 'confirmed']);
+    final uid = currentUser!.uid;
+
+    if (role == 'sender') {
+      query = query.where('createdByUid', isEqualTo: uid);
+    } else if (role == 'traveler') {
+      query = query.where('assignedTravelerUid', isEqualTo: uid);
+    } else if (role == 'receiver') {
+      query = query.where('trackedReceiverUid', isEqualTo: uid);
+    }
+
+    // Apply search query (city/address)
+    if (_searchQuery.isNotEmpty) {
+      query = query.where('pickupCity', isGreaterThanOrEqualTo: _searchQuery)
+                   .where('pickupCity', isLessThanOrEqualTo: _searchQuery + '\uf8ff');
+      // You might want to add more complex search logic for multiple fields or fuzzy search
+      // For simplicity, only pickupCity is filtered here.
+    }
+
+    // Apply date filter
+    if (_selectedDate != null) {
+      final startOfDay = DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day);
+      final endOfDay = DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day, 23, 59, 59);
+      query = query.where('pickupDate', isGreaterThanOrEqualTo: startOfDay)
+                   .where('pickupDate', isLessThanOrEqualTo: endOfDay);
+    }
+
+    // Apply parcel type filter
+    if (_selectedParcelType == 'Fragile') {
+      query = query.where('fragile', isEqualTo: true);
+    } else if (_selectedParcelType == 'Fast Delivery') {
+      query = query.where('fastDelivery', isEqualTo: true);
+    }
+
     return StreamBuilder<QuerySnapshot>(
-      stream: q.snapshots(),
+      stream: query.snapshots(),
       builder: (c, s) {
         if (!s.hasData) return const Center(child: CircularProgressIndicator());
         final docs = s.data!.docs;
@@ -54,12 +173,13 @@ class MyTripsScreen extends StatelessWidget {
           itemCount: docs.length,
           itemBuilder: (c, i) {
             final d = docs[i].data() as Map<String, dynamic>;
+            final parcel = Parcel.fromDoc(docs[i]); // Convert to Parcel object
             return Card(
               margin: const EdgeInsets.all(8),
               child: ListTile(
-                title: Text('#${d['id']} – ${d['contents']}'),
+                title: Text('#${parcel.id} – ${parcel.contents}'),
                 subtitle:
-                    Text('Price: ₹${d['price']}  •  Status: ${d['status']}'),
+                    Text('From: ${parcel.pickupCity} To: ${parcel.destCity} • Status: ${parcel.status}'),
                 trailing: TextButton(
                   child: const Text('View'),
                   onPressed: () {
@@ -67,9 +187,8 @@ class MyTripsScreen extends StatelessWidget {
                       c,
                       MaterialPageRoute(
                         builder: (_) => PackageDetailScreen(
-                          parcelId: docs[i].id,
+                          parcelId: parcel.id,
                           role: role,
-                          parcel: d,
                         ),
                       ),
                     );
