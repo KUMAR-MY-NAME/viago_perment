@@ -364,7 +364,7 @@ class _PackageDetailScreenState extends State<PackageDetailScreen> {
                   if (parcel['paymentStatus'] == 'paid')
                     ElevatedButton(
                       onPressed: () async {
-                        // Payment already done by sender, proceed to OTP
+                        // Payment already done, proceed to OTP
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -376,86 +376,45 @@ class _PackageDetailScreenState extends State<PackageDetailScreen> {
                       child: const Text("Send OTP for Delivery"),
                     )
                   else if (parcel['paymentStatus'] == 'pending_on_delivery')
+                    const ElevatedButton(
+                      onPressed: null, // Disabled as the traveler is waiting
+                      child: Text("Payment Pending from Receiver"),
+                    )
+                  else // Default case: paymentStatus is 'unpaid'
                     ElevatedButton(
-                      onPressed: () {
-                        // Navigate to ReceiverPaymentScreen
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ReceiverPaymentScreen(
-                              parcelId: widget.parcelId,
-                              receiverUid: parcel['receiverUid'],
-                              senderUid: parcel['createdByUid'],
-                              amount: (parcel['price'] ?? 0.0).toDouble(),
-                            ),
-                          ),
+                      onPressed: () async {
+                        // Traveler clicks this to request payment from the receiver
+                        await _firestoreService.updateParcel(widget.parcelId, {
+                          'paymentStatus': 'pending_on_delivery',
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text(
+                                  'Payment request sent to the receiver.')),
                         );
                       },
                       child: const Text("Request Payment from Receiver"),
-                    )
-                  else // paymentStatus is 'unpaid' or other, meaning sender needs to pay
-                    ElevatedButton(
-                      onPressed: () async {
-                        final senderUid = parcel['createdByUid'];
-                        final travelerUid = _firestoreService.uid;
-                        final packagePrice =
-                            (parcel['price'] ?? 0.0).toDouble();
-
-                        if (packagePrice <= 0) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    'Package price is not valid for payment.')),
-                          );
-                          return;
-                        }
-
-                        final platformFee =
-                            Pricing.getPlatformFee(packagePrice);
-
-                        // Perform payment from sender to traveler/platform
-                        final paymentSuccess =
-                            await _walletService.processParcelPayment(
-                          senderUid,
-                          travelerUid,
-                          packagePrice,
-                          widget.parcelId,
-                          platformFee,
-                        );
-
-                        if (paymentSuccess) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    'Payment successful! Proceeding to OTP.')),
-                          );
-                          // Update parcel payment status to paid
-                          await FirebaseFirestore.instance
-                              .collection('parcels')
-                              .doc(widget.parcelId)
-                              .update({
-                            'paymentStatus': 'paid',
-                            'updatedAt': FieldValue.serverTimestamp(),
-                          });
-                          // Then navigate to OTP screen
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  OtpDeliveryScreen(parcelId: widget.parcelId),
-                            ),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    'Payment failed. Sender might have insufficient balance.')),
-                          );
-                        }
-                      },
-                      child: const Text("Process Payment (Sender) & Send OTP"),
                     ),
-                ]
+                ],
+                // Receiver's Payment Button
+                if (widget.role == 'receiver' &&
+                    parcel['paymentStatus'] == 'pending_on_delivery')
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ReceiverPaymentScreen(
+                            parcelId: widget.parcelId,
+                            receiverUid: parcel['receiverUid'],
+                            senderUid: parcel['createdByUid'],
+                            amount: (parcel['price'] ?? 0.0).toDouble(),
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text("Pay Now"),
+                  ),
               ],
             ),
           );
