@@ -392,15 +392,16 @@ class _PackageDetailScreenState extends State<PackageDetailScreen> {
                     ElevatedButton(
                       onPressed: () async {
                         final who = parcel['confirmationWho'] ?? 'receiver';
+                        // MODIFIED: Prioritize trackedReceiverUid if available for receivers
                         final targetUid = who == 'sender'
                             ? parcel['createdByUid']
-                            : parcel['receiverUid'];
+                            : (parcel['trackedReceiverUid'] ?? parcel['receiverUid']);
 
                         if (targetUid == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content: Text(
-                                    'Error: Receiver has not registered yet.')),
+                                    'Error: The designated receiver has not registered or started tracking this parcel yet.')),
                           );
                           return;
                         }
