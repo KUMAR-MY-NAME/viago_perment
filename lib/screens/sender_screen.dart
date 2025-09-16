@@ -272,50 +272,67 @@ class _SenderScreenState extends State<SenderScreen> {
       finalPaymentStatus = 'pending_on_delivery';
     }
 
-    final doc = FirebaseFirestore.instance.collection('parcels').doc();
-    final now = DateTime.now();
-    final parcel = Parcel(
-      id: doc.id,
-      createdByUid: uid,
-      senderName: _senderName.text.trim(),
-      senderPhone: _senderPhone.text.trim(),
-      category: _category!,
-      pickupDate: _pickupDate!,
-      contents: _contents.text.trim(),
-      goodsValue: double.tryParse(_goodsValue.text) ?? 0,
-      photoUrls: [],
-      deadline: _deadline.value,
-      pickupPincode: _pickupPin.text.trim(),
-      pickupCity: _pickupCity.text.trim(),
-      pickupState: _pickupState.text.trim(),
-      pickupAddress: _pickupAddress.text.trim(),
-      destPincode: _destPin.text.trim(),
-      destCity: _destCity.text.trim(),
-      destState: _destState.text.trim(),
-      destAddress: _destAddress.text.trim(),
-      receiverName: _receiverName.text.trim(),
-      receiverPhone: _receiverPhone.text.trim(),
-      receiverId: _receiverId.text.trim(),
-      receiverUid: null,
-      receiverPhotoUrl: _receiverPhotoUrl,
-      weightKg: double.tryParse(_weight.text) ?? 0,
-      lengthCm: double.tryParse(_len.text) ?? 0,
-      widthCm: double.tryParse(_wid.text) ?? 0,
-      heightCm: double.tryParse(_ht.text) ?? 0,
-      distanceKm: double.tryParse(_km.text) ?? 0,
-      fragile: _fragile,
-      fastDelivery: _fast,
-      price: _estimated,
-      status: 'posted',
-      assignedTravelerUid: null,
-      assignedTravelerName: null,
-      confirmationWho: _who,
-      trackedReceiverUid: null,
-      pendingOtp: null,
-      paymentStatus: finalPaymentStatus, // Set payment status here
-      createdAt: now,
-      updatedAt: now,
-    );
+    final receiverUsername = _receiverId.text.trim();
+      String? receiverUid;
+      if (receiverUsername.isNotEmpty) {
+        final receiverUser =
+            await FirestoreService().getUserByUsername(receiverUsername);
+        if (receiverUser == null) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text(
+                    'Receiver username not found. Please check the ID and try again.')),
+          );
+          return; // Stop submission if receiver not found
+        }
+        receiverUid = receiverUser.uid;
+      }
+
+      final doc = FirebaseFirestore.instance.collection('parcels').doc();
+      final now = DateTime.now();
+      final parcel = Parcel(
+        id: doc.id,
+        createdByUid: uid,
+        senderName: _senderName.text.trim(),
+        senderPhone: _senderPhone.text.trim(),
+        category: _category!,
+        pickupDate: _pickupDate!,
+        contents: _contents.text.trim(),
+        goodsValue: double.tryParse(_goodsValue.text) ?? 0,
+        photoUrls: [],
+        deadline: _deadline.value,
+        pickupPincode: _pickupPin.text.trim(),
+        pickupCity: _pickupCity.text.trim(),
+        pickupState: _pickupState.text.trim(),
+        pickupAddress: _pickupAddress.text.trim(),
+        destPincode: _destPin.text.trim(),
+        destCity: _destCity.text.trim(),
+        destState: _destState.text.trim(),
+        destAddress: _destAddress.text.trim(),
+        receiverName: _receiverName.text.trim(),
+        receiverPhone: _receiverPhone.text.trim(),
+        receiverId: _receiverId.text.trim(),
+        receiverUid: receiverUid,
+        receiverPhotoUrl: _receiverPhotoUrl,
+        weightKg: double.tryParse(_weight.text) ?? 0,
+        lengthCm: double.tryParse(_len.text) ?? 0,
+        widthCm: double.tryParse(_wid.text) ?? 0,
+        heightCm: double.tryParse(_ht.text) ?? 0,
+        distanceKm: double.tryParse(_km.text) ?? 0,
+        fragile: _fragile,
+        fastDelivery: _fast,
+        price: _estimated,
+        status: 'posted',
+        assignedTravelerUid: null,
+        assignedTravelerName: null,
+        confirmationWho: _who,
+        trackedReceiverUid: null,
+        pendingOtp: null,
+        paymentStatus: finalPaymentStatus, // Set payment status here
+        createdAt: now,
+        updatedAt: now,
+      );
 
     await doc.set(parcel.toMap());
     final urls = await _uploadPhotos(doc.id);

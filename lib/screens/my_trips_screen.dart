@@ -131,13 +131,13 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
     List<String> statuses;
     switch (role) {
       case 'sender':
-        statuses = ['posted', 'selected', 'confirmed', 'in_transit', 'awaiting_receiver_payment', 'delivered', 'canceled'];
+        statuses = ['posted', 'selected', 'confirmed', 'in_transit', 'awaiting_receiver_payment'];
         break;
       case 'traveler':
-        statuses = ['selected', 'confirmed', 'in_transit', 'awaiting_receiver_payment', 'delivered'];
+        statuses = ['selected', 'confirmed', 'in_transit', 'awaiting_receiver_payment'];
         break;
       case 'receiver':
-        statuses = ['confirmed', 'in_transit', 'awaiting_receiver_payment', 'delivered'];
+        statuses = ['selected','confirmed', 'in_transit', 'awaiting_receiver_payment'];
         break;
       default:
         statuses = [];
@@ -156,7 +156,7 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
     } else if (role == 'traveler') {
       query = query.where('assignedTravelerUid', isEqualTo: uid);
     } else if (role == 'receiver') {
-      query = query.where('trackedReceiverUid', isEqualTo: uid);
+      query = query.where('receiverUid', isEqualTo: uid);
     }
 
     // Apply search query (city/address)

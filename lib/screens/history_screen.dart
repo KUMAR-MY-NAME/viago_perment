@@ -23,7 +23,7 @@ class HistoryScreen extends StatelessWidget {
 
     final asReceiver = FirebaseFirestore.instance
         .collection('parcels')
-        .where('trackedReceiverUid', isEqualTo: uid)
+        .where('receiverUid', isEqualTo: uid)
         .where('status', whereIn: ['delivered', 'canceled']);
 
     return DefaultTabController(
