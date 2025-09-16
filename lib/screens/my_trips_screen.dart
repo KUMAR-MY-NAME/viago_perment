@@ -128,8 +128,27 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
   }
 
   Widget _buildParcelList({required String role}) {
+    List<String> statuses;
+    switch (role) {
+      case 'sender':
+        statuses = ['posted', 'selected', 'confirmed', 'in_transit', 'awaiting_receiver_payment', 'delivered', 'canceled'];
+        break;
+      case 'traveler':
+        statuses = ['selected', 'confirmed', 'in_transit', 'awaiting_receiver_payment', 'delivered'];
+        break;
+      case 'receiver':
+        statuses = ['confirmed', 'in_transit', 'awaiting_receiver_payment', 'delivered'];
+        break;
+      default:
+        statuses = [];
+    }
+
+    if (statuses.isEmpty) {
+      return const Center(child: Text('Invalid role.'));
+    }
+
     Query query = FirebaseFirestore.instance.collection('parcels')
-        .where('status', whereIn: ['posted', 'selected', 'confirmed']);
+        .where('status', whereIn: statuses);
     final uid = currentUser!.uid;
 
     if (role == 'sender') {
@@ -166,14 +185,21 @@ class _MyTripsScreenState extends State<MyTripsScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: query.snapshots(),
       builder: (c, s) {
-        if (!s.hasData) return const Center(child: CircularProgressIndicator());
+        if (s.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (s.hasError) {
+          return Center(child: Text('Error: ${s.error}'));
+        }
+        if (!s.hasData || s.data!.docs.isEmpty) {
+          return const Center(child: Text('No packages found.'));
+        }
+        
         final docs = s.data!.docs;
-        if (docs.isEmpty) return const Center(child: Text('No packages yet'));
         return ListView.builder(
           itemCount: docs.length,
           itemBuilder: (c, i) {
-            final d = docs[i].data() as Map<String, dynamic>;
-            final parcel = Parcel.fromDoc(docs[i]); // Convert to Parcel object
+            final parcel = Parcel.fromDoc(docs[i]);
             return Card(
               margin: const EdgeInsets.all(8),
               child: ListTile(

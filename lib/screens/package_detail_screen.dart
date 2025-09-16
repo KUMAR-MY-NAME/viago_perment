@@ -347,45 +347,28 @@ class _PackageDetailScreenState extends State<PackageDetailScreen> {
                 _buildCancelButton(context, parcel),
 
                 if (widget.role == 'traveler') ...[
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              OtpConfirmScreen(parcelId: widget.parcelId),
-                        ),
-                      );
-                    },
-                    child: const Text("Confirm Order (OTP from Sender)"),
-                  ),
-                  const SizedBox(height: 12),
-                  // Conditional button for Delivery OTP / Receiver Payment
-                  if (parcel['paymentStatus'] == 'paid')
+                  // Show "Confirm Order" button ONLY when the parcel is 'selected'
+                  if (parcel['status'] == 'selected')
                     ElevatedButton(
-                      onPressed: () async {
-                        // Payment already done, proceed to OTP
+                      onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) =>
-                                OtpDeliveryScreen(parcelId: widget.parcelId),
+                                OtpConfirmScreen(parcelId: widget.parcelId),
                           ),
                         );
                       },
-                      child: const Text("Send OTP for Delivery"),
-                    )
-                  else if (parcel['paymentStatus'] == 'pending_on_delivery')
-                    const ElevatedButton(
-                      onPressed: null, // Disabled as the traveler is waiting
-                      child: Text("Payment Pending from Receiver"),
-                    )
-                  else // Default case: paymentStatus is 'unpaid'
+                      child: const Text("Confirm Order (OTP from Sender)"),
+                    ),
+
+                  // Show "Request Payment" button ONLY when parcel is 'in_transit' AND payment is 'pending_on_delivery'
+                  if (parcel['status'] == 'in_transit' &&
+                      parcel['paymentStatus'] == 'pending_on_delivery')
                     ElevatedButton(
                       onPressed: () async {
-                        // Traveler clicks this to request payment from the receiver
                         await _firestoreService.updateParcel(widget.parcelId, {
-                          'paymentStatus': 'pending_on_delivery',
+                          'status': 'awaiting_receiver_payment',
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -395,10 +378,54 @@ class _PackageDetailScreenState extends State<PackageDetailScreen> {
                       },
                       child: const Text("Request Payment from Receiver"),
                     ),
+
+                  // Show "Waiting for Receiver to Pay" ONLY when status is 'awaiting_receiver_payment'
+                  if (parcel['status'] == 'awaiting_receiver_payment')
+                    const ElevatedButton(
+                      onPressed: null,
+                      child: Text("Waiting for Receiver to Pay"),
+                    ),
+
+                  // Show "Send OTP for Delivery" ONLY when parcel is 'in_transit' AND payment is 'paid'
+                  if (parcel['status'] == 'in_transit' &&
+                      parcel['paymentStatus'] == 'paid')
+                    ElevatedButton(
+                      onPressed: () async {
+                        final who = parcel['confirmationWho'] ?? 'receiver';
+                        final targetUid = who == 'sender'
+                            ? parcel['createdByUid']
+                            : parcel['receiverUid'];
+
+                        if (targetUid == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text(
+                                    'Error: Receiver has not registered yet.')),
+                          );
+                          return;
+                        }
+
+                        await _firestoreService.createAndSendOtp(
+                          parcelId: widget.parcelId,
+                          type: 'delivery',
+                          targetUid: targetUid,
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                OtpDeliveryScreen(parcelId: widget.parcelId),
+                          ),
+                        );
+                      },
+                      child: const Text("Send OTP for Delivery"),
+                    ),
                 ],
+
                 // Receiver's Payment Button
                 if (widget.role == 'receiver' &&
-                    parcel['paymentStatus'] == 'pending_on_delivery')
+                    parcel['status'] == 'awaiting_receiver_payment')
                   ElevatedButton(
                     onPressed: () {
                       Navigator.push(
@@ -413,7 +440,7 @@ class _PackageDetailScreenState extends State<PackageDetailScreen> {
                         ),
                       );
                     },
-                    child: const Text("Pay Now"),
+                    child: const Text("Pending Payment: Pay Now"),
                   ),
               ],
             ),

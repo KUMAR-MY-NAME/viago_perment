@@ -71,9 +71,10 @@ class _ReceiverPaymentScreenState extends State<ReceiverPaymentScreen> {
     setState(() => _isProcessingPayment = false);
 
     if (paymentSuccess) {
-      // Update parcel payment status to paid
+      // Update parcel payment status to paid and status back to in_transit
       await FirebaseFirestore.instance.collection('parcels').doc(widget.parcelId).update({
         'paymentStatus': 'paid',
+        'status': 'in_transit', // Reset status to allow traveler to proceed
         'updatedAt': FieldValue.serverTimestamp(),
       });
       ScaffoldMessenger.of(context).showSnackBar(

@@ -58,7 +58,7 @@ class _OtpConfirmScreenState extends State<OtpConfirmScreen> {
         pending['code'] == entered) {
       await _svc.collection('parcels').doc(widget.parcelId).update({
         'pendingOtp': FieldValue.delete(),
-        'status': 'confirmed',
+        'status': 'in_transit',
         'updatedAt': FieldValue.serverTimestamp(),
       });
       if (context.mounted) {
