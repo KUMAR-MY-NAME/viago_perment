@@ -390,28 +390,7 @@ class _PackageDetailScreenState extends State<PackageDetailScreen> {
                   if (parcel['status'] == 'in_transit' &&
                       parcel['paymentStatus'] == 'paid')
                     ElevatedButton(
-                      onPressed: () async {
-                        final who = parcel['confirmationWho'] ?? 'receiver';
-                        // MODIFIED: Prioritize trackedReceiverUid if available for receivers
-                        final targetUid = who == 'sender'
-                            ? parcel['createdByUid']
-                            : (parcel['trackedReceiverUid'] ?? parcel['receiverUid']);
-
-                        if (targetUid == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    'Error: The designated receiver has not registered or started tracking this parcel yet.')),
-                          );
-                          return;
-                        }
-
-                        await _firestoreService.createAndSendOtp(
-                          parcelId: widget.parcelId,
-                          type: 'delivery',
-                          targetUid: targetUid,
-                        );
-
+                      onPressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -420,7 +399,7 @@ class _PackageDetailScreenState extends State<PackageDetailScreen> {
                           ),
                         );
                       },
-                      child: const Text("Send OTP for Delivery"),
+                      child: const Text("Proceed to Delivery OTP"),
                     ),
                 ],
 
