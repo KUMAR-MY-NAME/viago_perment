@@ -330,6 +330,7 @@ class _SenderScreenState extends State<SenderScreen> {
         trackedReceiverUid: null,
         pendingOtp: null,
         paymentStatus: finalPaymentStatus, // Set payment status here
+        refundStatus: null,
         createdAt: now,
         updatedAt: now,
       );

@@ -44,18 +44,17 @@ class Parcel {
   double price;
 
   // Workflow
-    String status; // posted | selected | confirmed | in_transit | delivered | canceled
+  String status; // posted | selected | confirmed | in_transit | delivered | canceled
   String? assignedTravelerUid;
   String? assignedTravelerName;
   String confirmationWho; // 'sender' or 'receiver'
-  String?
-      trackedReceiverUid; // when receiver starts tracking (adds to receiver's MyTrip)
+  String? trackedReceiverUid; // when receiver starts tracking (adds to receiver's MyTrip)
 
   // OTP helper: stores last pending otp for confirm/delivery
-  Map<String, dynamic>?
-      pendingOtp; // { 'type': 'confirm'|'delivery', 'code': '123456', 'toUid': 'uid' }
+  Map<String, dynamic>? pendingOtp;
 
   String paymentStatus; // 'unpaid' | 'paid' | 'pending_on_delivery'
+  String? refundStatus; // null | 'refunded'
 
   double? latitude;
   double? longitude;
@@ -104,6 +103,7 @@ class Parcel {
     this.trackedReceiverUid,
     this.pendingOtp,
     required this.paymentStatus,
+    this.refundStatus,
     this.latitude,
     this.longitude,
     this.deliveryProofUrl,
@@ -155,6 +155,7 @@ class Parcel {
           ? Map<String, dynamic>.from(d['pendingOtp'])
           : null,
       paymentStatus: d['paymentStatus'] ?? 'unpaid',
+      refundStatus: d['refundStatus'],
       latitude: (d['latitude'] ?? 0.0).toDouble(),
       longitude: (d['longitude'] ?? 0.0).toDouble(),
       deliveryProofUrl: d['deliveryProofUrl'],
@@ -201,11 +202,11 @@ class Parcel {
         'trackedReceiverUid': trackedReceiverUid,
         'pendingOtp': pendingOtp,
         'paymentStatus': paymentStatus,
+        'refundStatus': refundStatus,
         'latitude': latitude,
         'longitude': longitude,
         'deliveryProofUrl': deliveryProofUrl,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       }..removeWhere((k, v) => v == null);
-  
 }

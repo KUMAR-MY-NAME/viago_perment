@@ -3,6 +3,8 @@ import 'cancellation_refund_screen.dart';
 import 'support_screen.dart';
 import 'help_screen.dart';
 import 'wallet_screen.dart';
+import 'blocked_users_screen.dart';
+import 'my_reports_screen.dart';
 
 class MenuScreen extends StatelessWidget {
   final String? username;
@@ -65,6 +67,30 @@ class MenuScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => const WalletScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.block),
+            title: const Text("Blocked Users"),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const BlockedUsersScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.report),
+            title: const Text("My Reports"),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const MyReportsScreen(),
                 ),
               );
             },
