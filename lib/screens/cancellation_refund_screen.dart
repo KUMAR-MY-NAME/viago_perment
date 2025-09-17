@@ -153,7 +153,9 @@ class _CancellationRefundScreenState extends State<CancellationRefundScreen> {
                       Text('Price: ₹${parcel.price.toStringAsFixed(2)}'),
                       Text('Status: ${parcel.status}'),
                       if (wasPaid)
-                        Text('Payment: Paid', style: TextStyle(color: Colors.green[700])),
+                        Text('Payment: Paid', style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.bold)),
+                      if (!wasPaid)
+                        Text('Payment: Not Paid', style: TextStyle(color: Colors.orange[700], fontWeight: FontWeight.bold)),
                       if (isRefunded)
                         Text('Refund: Processed', style: TextStyle(color: Colors.blue[700])),
                     ],
@@ -172,7 +174,11 @@ class _CancellationRefundScreenState extends State<CancellationRefundScreen> {
                               label: Text('Refunded'),
                               backgroundColor: Colors.grey,
                             )
-                          : null, // No button if not paid
+                          : const Chip(
+                              label: Text('Not Paid'),
+                              backgroundColor: Colors.transparent,
+                              shape: StadiumBorder(side: BorderSide(color: Colors.grey)),
+                            ),
                 ),
               );
             },
