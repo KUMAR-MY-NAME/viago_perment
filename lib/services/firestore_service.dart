@@ -105,6 +105,14 @@ class FirestoreService {
         .map((s) => s.docs.map((d) => Parcel.fromDoc(d)).toList());
   }
 
+  Stream<List<Parcel>> streamMyCancelledParcelsAsSender() {
+    return parcels
+        .where('createdByUid', isEqualTo: uid)
+        .where('status', isEqualTo: 'canceled')
+        .snapshots()
+        .map((s) => s.docs.map((d) => Parcel.fromDoc(d)).toList());
+  }
+
   /// ---------------- TRIPS -----------------
 
   Future<void> upsertTrip(String uid, Map<String, dynamic> tripData) async {

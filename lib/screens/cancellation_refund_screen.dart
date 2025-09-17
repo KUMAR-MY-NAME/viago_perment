@@ -1,7 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:packmate/models/parcel.dart';
+import 'package:packmate/services/firestore_service.dart';
 import 'package:packmate/services/wallet_service.dart';
 
 class CancellationRefundScreen extends StatefulWidget {
@@ -14,32 +14,81 @@ class CancellationRefundScreen extends StatefulWidget {
 
 class _CancellationRefundScreenState extends State<CancellationRefundScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
+  late final FirestoreService _firestoreService;
+  late final WalletService _walletService;
+
+  @override
+  void initState() {
+    super.initState();
+    if (currentUser != null) {
+      _firestoreService = FirestoreService();
+      _walletService = WalletService(currentUser!.uid);
+    }
+  }
 
   Future<void> _processRefund(Parcel parcel) async {
     if (currentUser == null) return;
 
-    // Disable button to prevent multiple clicks
-    setState(() {});
+    // Show a confirmation dialog before proceeding
+    final bool confirm = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirm Refund'),
+            content: Text(
+                'Are you sure you want to refund ₹${parcel.price.toStringAsFixed(2)} to your wallet?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Refund'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirm) return;
+
+    // Show a loading indicator
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     try {
-      final walletService = WalletService(currentUser!.uid);
-      await walletService.refundMoney(currentUser!.uid, parcel.price, parcel.id);
+      // Use the wallet service to process the refund
+      await _walletService.refundMoney(
+          currentUser!.uid, parcel.price, parcel.id);
 
       // Update the parcel to mark as refunded
-      await FirebaseFirestore.instance
-          .collection('parcels')
-          .doc(parcel.id)
-          .update({'refundStatus': 'refunded'});
+      await _firestoreService
+          .updateParcel(parcel.id, {'refundStatus': 'refunded'});
+
+      // Close the loading indicator
+      if (mounted) Navigator.of(context).pop();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Refund processed successfully!')),
+          const SnackBar(
+              content: Text('Refund processed successfully!'),
+              backgroundColor: Colors.green),
         );
       }
     } catch (e) {
+      // Close the loading indicator
+      if (mounted) Navigator.of(context).pop();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error processing refund: $e')),
+          SnackBar(
+              content: Text('Error processing refund: $e'),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -55,25 +104,30 @@ class _CancellationRefundScreenState extends State<CancellationRefundScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Cancellation & Refund")),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('parcels')
-            .where('createdByUid', isEqualTo: currentUser!.uid)
-            .where('status', isEqualTo: 'cancelled')
-            .snapshots(),
+      appBar: AppBar(
+        title: const Text("Cancellation & Refund"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      ),
+      body: StreamBuilder<List<Parcel>>(
+        stream: _firestoreService.streamMyCancelledParcelsAsSender(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
-                child: Text('You have no cancelled packages.'));
+              child: Text(
+                'You have no cancelled packages.',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            );
           }
 
-          final cancelledParcels = snapshot.data!.docs
-              .map((doc) => Parcel.fromDoc(doc))
-              .toList();
+          final cancelledParcels = snapshot.data!;
 
           return ListView.builder(
             itemCount: cancelledParcels.length,
@@ -83,19 +137,42 @@ class _CancellationRefundScreenState extends State<CancellationRefundScreen> {
               final bool isRefunded = parcel.refundStatus == 'refunded';
 
               return Card(
-                margin: const EdgeInsets.all(8.0),
+                elevation: 3,
+                margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                 child: ListTile(
-                  title: Text('Parcel ID: ${parcel.id}'),
-                  subtitle: Text(
-                      'Contents: ${parcel.contents}\nPrice: ₹${parcel.price.toStringAsFixed(2)}'),
-                  trailing: wasPaid
+                  contentPadding: const EdgeInsets.all(12.0),
+                  title: Text(
+                    'Parcel: ${parcel.contents}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text('To: ${parcel.receiverName}'),
+                      Text('Price: ₹${parcel.price.toStringAsFixed(2)}'),
+                      Text('Status: ${parcel.status}'),
+                      if (wasPaid)
+                        Text('Payment: Paid', style: TextStyle(color: Colors.green[700])),
+                      if (isRefunded)
+                        Text('Refund: Processed', style: TextStyle(color: Colors.blue[700])),
+                    ],
+                  ),
+                  trailing: wasPaid && !isRefunded
                       ? ElevatedButton(
-                          onPressed: isRefunded
-                              ? null // Disable button if already refunded
-                              : () => _processRefund(parcel),
-                          child: Text(isRefunded ? 'Refunded' : 'Refund Amount'),
+                          onPressed: () => _processRefund(parcel),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                          child: const Text('Refund'),
                         )
-                      : null, // No button if not paid
+                      : wasPaid && isRefunded
+                          ? const Chip(
+                              label: Text('Refunded'),
+                              backgroundColor: Colors.grey,
+                            )
+                          : null, // No button if not paid
                 ),
               );
             },
