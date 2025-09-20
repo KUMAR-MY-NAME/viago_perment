@@ -16,6 +16,7 @@ class FirestoreService {
   CollectionReference get usernames => _db.collection('usernames');
   CollectionReference get parcels => _db.collection('parcels');
   CollectionReference get trips => _db.collection('trips');
+  CollectionReference get profiles => _db.collection('profiles');
 
   /// ---------------- USERNAME / USER -----------------
 
@@ -48,7 +49,21 @@ class FirestoreService {
   }
 
   Future<void> createUser(AppUser user) async {
+    // Create the main user document
     await users.doc(user.uid).set(user.toMap(), SetOptions(merge: true));
+
+    // Create the corresponding profile document
+    await profiles.doc(user.uid).set({
+      'username': user.username,
+      'phone': user.phone,
+      'name': '',
+      'age': '',
+      'gender': '',
+      'email': '',
+      'profileImage': '',
+      'blockedUsers': [], // Initialize empty list
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<AppUser?> getUserByUsername(String username) async {

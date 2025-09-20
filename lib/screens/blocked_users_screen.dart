@@ -28,7 +28,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
 
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance
-          .collection('users')
+          .collection('profiles')
           .doc(currentUser!.uid)
           .get(),
       builder: (context, snapshot) {
@@ -77,11 +77,11 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                   child: ListTile(
                     title: Text(blockedUserData.username ?? 'Unknown User'),
                     subtitle: Text('UID: ${blockedUserData.uid}'),
-                    trailing: ElevatedButton(
+                                        trailing: ElevatedButton(
                       child: const Text('Unblock'),
                       onPressed: () {
                         FirebaseFirestore.instance
-                            .collection('users')
+                            .collection('profiles')
                             .doc(currentUser!.uid)
                             .update({
                           'blockedUsers': FieldValue.arrayRemove([blockedUid])

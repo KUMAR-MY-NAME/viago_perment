@@ -422,60 +422,12 @@ class _PackageDetailScreenState extends State<PackageDetailScreen> {
                     },
                     child: const Text("Pending Payment: Pay Now"),
                   ),
-
-                // Button for Sender/Receiver to request OTP to their own device
-                if ((isSender && parcel['confirmationWho'] == 'sender') ||
-                    (isReceiver && parcel['confirmationWho'] == 'receiver'))
-                  ElevatedButton(
-                    onPressed: () => _getDeliveryOtp(parcel),
-                    child: const Text("Get Delivery OTP"),
-                  ),
               ],
             ),
           );
         },
       ),
     );
-  }
-
-  Future<void> _getDeliveryOtp(Map<String, dynamic> parcel) async {
-    try {
-      final who = parcel['confirmationWho'];
-      final targetUid = who == 'sender'
-          ? parcel['createdByUid']
-          : parcel['receiverUid'];
-
-      if (targetUid == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: Confirmation user not found.')),
-        );
-        return;
-      }
-      
-      // Ensure the current user is the one who should be getting the OTP
-      if (FirebaseAuth.instance.currentUser?.uid != targetUid) {
-         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: You are not authorized to request this OTP.')),
-        );
-        return;
-      }
-
-      await _firestoreService.createAndSendOtp(
-        parcelId: widget.parcelId,
-        type: 'delivery',
-        targetUid: targetUid,
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'OTP sent to your notifications. Share it with the traveler.')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to get OTP: $e')),
-      );
-    }
   }
 
   Widget _buildVoiceNoteRecorder() {

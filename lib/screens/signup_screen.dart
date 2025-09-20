@@ -44,14 +44,8 @@ class _SignupScreenState extends State<SignupScreen> {
       final result = await _authService.sendOtp(
         phone,
         codeSent: (verificationId, resendToken) async {
-          // ✅ Save to Firestore
-          await _createUserDocs(username, phone, password);
-
-          // ✅ Save locally
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString("username", username);
-          await prefs.setString("phone", phone);
-          await prefs.setBool("loggedIn", true);
+          // The new createUser function in FirestoreService will handle all document creation
+          // after OTP verification is complete and the UID is available.
 
           if (!mounted) return;
           Navigator.of(context).pushNamed(
@@ -69,13 +63,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
       if (!mounted) return;
       if (result != null) {
-        await _createUserDocs(username, phone, password);
-
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString("username", username);
-        await prefs.setString("phone", phone);
-        await prefs.setBool("loggedIn", true);
-
+        // Web flow also defers document creation until after OTP verification
         Navigator.of(context).pushNamed(
           '/otp',
           arguments: {
@@ -95,30 +83,6 @@ class _SignupScreenState extends State<SignupScreen> {
     } finally {
       if (mounted) setState(() => _sendingOtp = false);
     }
-  }
-
-  /// 🔥 Creates documents in both `users` and `profiles`
-  Future<void> _createUserDocs(
-      String username, String phone, String password) async {
-    final firestore = FirebaseFirestore.instance;
-
-    await firestore.collection("users").doc(username).set({
-      "username": username,
-      "phone": phone,
-      "password": password, // ⚠️ hash in production
-      "createdAt": FieldValue.serverTimestamp(),
-    });
-
-    await firestore.collection("profiles").doc(username).set({
-      "username": username,
-      "phone": phone,
-      "name": "",
-      "age": "",
-      "gender": "",
-      "email": "",
-      "profileImage": "",
-      "updatedAt": FieldValue.serverTimestamp(),
-    });
   }
 
   String? _validatePhone(String? v) {
