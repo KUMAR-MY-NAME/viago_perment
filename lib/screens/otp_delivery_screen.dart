@@ -118,33 +118,24 @@ class _OtpDeliveryScreenState extends State<OtpDeliveryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (!_isOtpSent)
-              ElevatedButton(
-                onPressed: _isSendingOtp ? null : _sendOtp,
-                child: _isSendingOtp
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Send OTP to Recipient"),
-              ),
-            if (_isOtpSent) ...[
-              const Text(
-                "An OTP has been sent. Please enter it below to confirm the delivery.",
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                  controller: _otpCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: "Enter OTP",
-                    border: OutlineInputBorder(),
-                  ),
-                  textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _verifyOtp,
-                child: const Text("Verify OTP & Complete Delivery"),
-              ),
-            ],
+            const Text(
+              "Ask the recipient for the OTP and enter it below to confirm the delivery.",
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            TextField(
+                controller: _otpCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: "Enter OTP",
+                  border: OutlineInputBorder(),
+                ),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _verifyOtp,
+              child: const Text("Verify OTP & Complete Delivery"),
+            ),
           ],
         ),
       ),
